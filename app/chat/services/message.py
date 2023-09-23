@@ -17,9 +17,21 @@ class MessageService:
             limit: int,
 
     ) -> list[Message]:
-        pass
+        query = select(Message).where(
+            or_(
+                and_(Message.target_id == current_user_id, Message.initiator_id == target_user_id),
+                and_(Message.target_id == target_user_id, Message.initiator_id == current_user_id),
+            ),
+        ).offset(
+            skip,
+        ).limit(limit)
+        result = session.execute(query)
+        return result.scalars().all()
 
     def create_message(
             self, initiator_id: int, target_id: int, text: str,
     ) -> Message:
-        pass
+        message = Message(initiator_id=initiator_id, target_id=target_id, text=text)
+        session.add(message)
+        session.commit()
+        return message

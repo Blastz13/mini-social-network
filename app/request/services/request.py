@@ -1,7 +1,7 @@
 
 from sqlalchemy import or_, select, update
 
-# from app.friend.services import FriendService
+from app.friend.services import FriendService
 from app.request.models import RequestFriend
 from core.db import session
 from core.exceptions import (
@@ -43,7 +43,7 @@ class RequestService:
         )
         session.execute(query)
         session.commit()
-        # FriendService().create_friend(initiator_id=request.initiator_id, target_id=request.target_id)
+        FriendService().create_friend(initiator_id=request.initiator_id, target_id=request.target_id)
         return request
 
     def get_request_or_404(cls, id: int) -> RequestFriend:
