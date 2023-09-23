@@ -16,13 +16,33 @@ class FriendService:
             skip: int,
             limit: int = 12,
     ) -> list[Friend]:
-        pass
+        query = select(Friend).where(
+            or_(
+                Friend.target_id == user_id,
+                Friend.initiator_id == user_id,
+            ),
+        )
+
+        query = query.limit(limit).offset(skip).limit(limit)
+        result = session.execute(query)
+        return result.scalars().all()
 
     def create_friend(cls, initiator_id: int, target_id: int) -> Friend:
-        pass
+        friend = Friend(initiator_id=initiator_id, target_id=target_id)
+        session.add(friend)
+        session.commit()
+        session.refresh(friend)
+        return friend
 
     def get_friend_or_404(cls, id: int) -> Friend:
-        pass
+        result = session.execute(select(Friend).where(Friend.id == id))
+        instance = result.scalar()
+        if not instance:
+            raise NotFoundException
+        return instance
 
     def remove_friend(self, id: int) -> dict:
-        pass
+        friend = self.get_friend_or_404(id=id)
+        session.delete(friend)
+        session.commit()
+        return {}
