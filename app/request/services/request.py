@@ -19,16 +19,45 @@ class RequestService:
             limit: int = 12,
             skip: int = None,
     ) -> list[RequestFriend]:
-        pass
+        query = select(RequestFriend).where(
+            or_(RequestFriend.initiator_id == user_id, RequestFriend.target_id == user_id),
+        ).offset(
+            skip,
+        ).limit(limit)
+        result = session.execute(query)
+        return result.scalars().all()
 
     def create_request(self, initiator_id: int, target_id: int) -> RequestFriend:
-        pass
+        request = RequestFriend(initiator_id=initiator_id, target_id=target_id)
+        session.add(request)
+        session.commit()
+        return request
 
     def accept_request(self, id: int, user_id: int) -> RequestFriend:
-        pass
+        request = self.get_request_or_404(id=id)
+        query = (
+            update(RequestFriend)
+            .where(RequestFriend.id == id, RequestFriend.target_id == user_id)
+            .values(status=True)
+            .execution_options(synchronize_session='fetch')
+        )
+        session.execute(query)
+        session.commit()
+        # FriendService().create_friend(initiator_id=request.initiator_id, target_id=request.target_id)
+        return request
 
     def get_request_or_404(cls, id: int) -> RequestFriend:
-        pass
+        result = session.execute(select(RequestFriend).where(RequestFriend.id == id))
+        instance = result.scalar()
+        if not instance:
+            raise NotFoundException
+        return instance
 
     def remove_request(self, user_id: int, id: int) -> dict:
-        pass
+        request = self.get_request_or_404(id=id)
+        if request.target_id == user_id or request.initiator_id == user_id:
+            session.delete(request)
+            session.commit()
+            return {}
+        else:
+            raise NotFoundException
